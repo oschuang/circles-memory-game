@@ -33,6 +33,13 @@ const CirclesContainer = function (props) {
     return className;
   }
 
+  function onCircleClick(color) {
+    new Promise((resolve, reject) => {
+      props.recordMove(color);
+      resolve();
+    }).then(() => props.verifyMove(color));
+  }
+
   return (
     <div id="circles-wrapper">
       <Circle
@@ -40,30 +47,22 @@ const CirclesContainer = function (props) {
         //animate the button with active-circle class and disable its pointer-events until the user's turn
         //color-circle is default class
         className={getCircleClass("red")}
-        onClick={() => {
-          props.makeMove("red");
-        }}
+        onClick={() => onCircleClick("red")}
       />
       <Circle
         id="green-circle"
         className={getCircleClass("green")}
-        onClick={() => {
-          props.makeMove("green");
-        }}
+        onClick={() => onCircleClick("green")}
       />
       <Circle
         id="yellow-circle"
         className={getCircleClass("yellow")}
-        onClick={() => {
-          props.makeMove("yellow");
-        }}
+        onClick={() => onCircleClick("yellow")}
       />
       <Circle
         id="blue-circle"
         className={getCircleClass("blue")}
-        onClick={() => {
-          props.makeMove("blue");
-        }}
+        onClick={() => onCircleClick("blue")}
       />
       <DisplayCircle gameStarted={props.gameStarted} round={props.round} />;
     </div>
@@ -125,8 +124,6 @@ class App extends React.Component {
       userTurn: false, //false
       //Strict is off by default
       strictMode: false,
-      //Indicates restarting in strict mode after incorrect input
-      strictRestart: false,
       //Stores the sound fx clips
       sounds: {
         red: new Audio("https://s3.amazonaws.com/freecodecamp/simonSound1.mp3"),
@@ -141,85 +138,114 @@ class App extends React.Component {
         ),
       },
     };
-    this.makeMove = this.makeMove.bind(this);
+
+    this.startGame = this.startGame.bind(this);
+    this.recordMove = this.recordMove.bind(this);
+    this.verifyMove = this.verifyMove.bind(this);
+
+    this.addColor = this.addColor.bind(this);
+    this.playSequence = this.playSequence.bind(this);
+    this.advanceRound = this.advanceRound.bind(this);
+    this.redoRound = this.redoRound.bind(this);
+    this.toggleTurn = this.toggleTurn.bind(this);
+    this.clearUserMoves = this.clearUserMoves.bind(this);
+
     this.resetGame = this.resetGame.bind(this);
     this.toggleStrict = this.toggleStrict.bind(this);
 
-    this.getRandomColor = this.getRandomColor.bind(this);
     this.incrementRound = this.incrementRound.bind(this);
+    this.getRandomColor = this.getRandomColor.bind(this);
+
+    this.playColorFX = this.playColorFX.bind(this);
     this.animateColor = this.animateColor.bind(this);
-    this.clearColor = this.clearColor.bind(this);
-    this.toggleTurn = this.toggleTurn.bind(this);
-    this.playColor = this.playColor.bind(this);
-    this.clearUserMoves = this.clearUserMoves.bind(this);
+    this.activateColor = this.activateColor.bind(this);
+    this.deactivateColor = this.deactivateColor.bind(this);
 
-    this.pushColor = this.pushColor.bind(this);
-    this.repeatCpuMoves = this.repeatCpuMoves.bind(this);
-
-    this.finalMove = this.finalMove.bind(this);
-    this.verifyMove = this.verifyMove.bind(this);
-
-    this.startGame = this.startGame.bind(this);
-
-    this.repeatTurn = this.repeatTurn.bind(this);
-    this.nextTurn = this.nextTurn.bind(this);
-
-    this.clickCircle = this.clickCircle.bind(this);
+    this.isFinalMove = this.isFinalMove.bind(this);
+    this.isCorrect = this.isCorrect.bind(this);
   }
 
-  //clean up later
   startGame() {
-    this.pushColor();
     this.setState({
       gameStarted: true,
-      // strictRestart: false, //???
     });
-    this.repeatCpuMoves();
+    this.addColor();
+    this.playSequence();
   }
 
-  pushColor() {
-    let newColor = this.getRandomColor();
+  recordMove(color) {
+    this.setState({
+      userMoves: [...this.state.userMoves, color],
+    });
+    this.playColorFX(color);
+  }
+
+  //Runs when user clicks a color; color argument is on click
+  verifyMove(color) {
+    //Wrong: stop input and repeat sequence
+    if (!this.isCorrect()) {
+      console.log("Wrong Move");
+      if (this.state.strictMode) {
+        this.resetGame();
+        return;
+      }
+      this.toggleTurn();
+      this.redoRound();
+      return;
+    }
+    //Correct: check if final move
+    if (this.isFinalMove()) {
+      console.log("Last move");
+      this.advanceRound();
+    }
+  }
+
+  addColor() {
+    const newColor = this.getRandomColor();
     this.setState({
       //Record the new color
       cpuMoves: [...this.state.cpuMoves, newColor],
     });
   }
+  //rename bc it also toggles at end?
+  playSequence() {
+    let i = 0;
+    const replay = setInterval(() => {
+      if (i === this.state.cpuMoves.length) {
+        // console.log("done");
+        clearInterval(replay);
+        //toggling here bc end of sequence
+        this.toggleTurn();
+        return;
+      }
+      let currentColor = this.state.cpuMoves[i];
+      this.playColorFX(currentColor);
+      i++;
+    }, 500);
+  }
 
-  playColor(color) {
-    console.log(color);
-
+  advanceRound() {
     new Promise((resolve, reject) => {
-      this.animateColor(color);
-      this.playSound(color);
+      this.toggleTurn();
+      this.clearUserMoves();
+      this.incrementRound();
+      this.addColor();
       resolve();
     }).then(() => {
-      setTimeout(() => {
-        this.clearColor();
-      }, 300);
+      this.playSequence();
     });
+  }
+
+  redoRound() {
+    this.clearUserMoves();
+    this.playSequence();
   }
 
   toggleTurn() {
-    console.log("toggle turn");
+    //Runs when: cpu finishes replaying/user finishes inputting
     this.setState({
       userTurn: !this.state.userTurn,
     });
-  }
-
-  animateColor(color) {
-    this.setState({
-      activeColor: color,
-    });
-  }
-  //maybe combine animateColor and clearColor using promise?
-  clearColor() {
-    this.setState({
-      activeColor: "",
-    });
-  }
-
-  playSound(color) {
-    this.state.sounds[color].play();
   }
 
   clearUserMoves() {
@@ -231,108 +257,6 @@ class App extends React.Component {
   incrementRound() {
     this.setState({
       round: this.state.round + 1,
-    });
-  }
-
-  getRandomColor() {
-    let randomColor = this.state.colors[Math.floor(Math.random() * 4)];
-    return randomColor;
-  }
-
-  //rename bc it also toggles at end?
-  repeatCpuMoves() {
-    let i = 0;
-    const repeatSequence = setInterval(() => {
-      console.log(i);
-      if (i === this.state.cpuMoves.length) {
-        console.log("done");
-        clearInterval(repeatSequence);
-        //toggling here bc end of sequence
-        this.toggleTurn();
-      } else {
-        let currentColor = this.state.cpuMoves[i];
-        this.playColor(currentColor);
-      }
-      i++;
-    }, 500);
-  }
-
-  finalMove() {
-    if (this.state.userMoves.length === this.state.cpuMoves.length) {
-      return true;
-    }
-    return false;
-  }
-
-  verifyMove() {
-    let currentIndex = this.state.userMoves.length - 1;
-    console.log(currentIndex);
-    let currentMove = this.state.userMoves[currentIndex];
-    let correctMove = this.state.cpuMoves[currentIndex];
-    console.log(
-      "you pressed " + currentMove + ", correct answer was " + correctMove
-    );
-    if (currentMove === correctMove) {
-      return true;
-    }
-    return false;
-  }
-
-  repeatTurn() {
-    this.toggleTurn();
-    this.clearUserMoves();
-    this.repeatCpuMoves();
-  }
-
-  nextTurn() {
-    new Promise((resolve, reject) => {
-      this.toggleTurn();
-      this.clearUserMoves();
-      this.incrementRound();
-      this.pushColor();
-      resolve();
-    }).then(() => {
-      this.repeatCpuMoves();
-    });
-  }
-
-  clickCircle(color) {
-    this.setState({
-      userMoves: [...this.state.userMoves, color],
-    });
-    this.playColor(color);
-  }
-
-  //Runs when user clicks a color; color argument is on click
-  makeMove(color) {
-    //Prevent overlapping sounds if user clicks quickly
-    this.state.sounds[color].pause();
-    this.state.sounds[color].currentTime = 0;
-
-    //Record the user's move and animate the clicked button
-    new Promise((resolve, reject) => {
-      this.clickCircle(color);
-      resolve();
-    }).then(() => {
-      //if wrong, stop input and repeat sequence
-      if (!this.verifyMove())
-        if (this.state.strictMode) {
-          // this.setState({
-          //   round: "game over",
-          // });
-          this.resetGame();
-          return;
-        } else {
-          console.log("Wrong Move");
-          this.repeatTurn();
-        }
-      //if correct, check if last move
-      else {
-        if (this.finalMove()) {
-          console.log("Last move");
-          this.nextTurn();
-        }
-      }
     });
   }
 
@@ -348,14 +272,63 @@ class App extends React.Component {
     });
   }
 
-  //Runs when strict buttons is clicked while game isn't running
   toggleStrict() {
     this.setState({
       strictMode: !this.state.strictMode,
     });
   }
 
-  getRound() {
+  playColorFX(color) {
+    console.log(color);
+    this.animateColor(color);
+    this.playSound(color);
+  }
+  animateColor(color) {
+    new Promise((resolve, reject) => {
+      this.activateColor(color);
+      resolve();
+    }).then(() => {
+      setTimeout(() => {
+        this.deactivateColor();
+      }, 300);
+    });
+  }
+  activateColor(color) {
+    this.setState({
+      activeColor: color,
+    });
+  }
+  deactivateColor() {
+    this.setState({
+      activeColor: "",
+    });
+  }
+  playSound(color) {
+    this.state.sounds[color].play();
+  }
+
+  isCorrect() {
+    const currentMoveIndex = this.state.userMoves.length - 1;
+    const userMove = this.state.userMoves[currentMoveIndex];
+    const cpuMove = this.state.cpuMoves[currentMoveIndex];
+    if (userMove === cpuMove) {
+      return true;
+    }
+    return false;
+  }
+  isFinalMove() {
+    if (this.state.userMoves.length === this.state.cpuMoves.length) {
+      return true;
+    }
+    return false;
+  }
+
+  getRandomColor() {
+    const randomColor = this.state.colors[Math.floor(Math.random() * 4)];
+    return randomColor;
+  }
+
+  getCurrentRound() {
     if (this.state.round < 10) {
       return `0${this.state.round}`;
     }
@@ -375,11 +348,12 @@ class App extends React.Component {
           startGame={this.startGame}
         />
         <CirclesContainer
-          makeMove={this.makeMove}
+          verifyMove={this.verifyMove}
           activeColor={activeColor}
           userTurn={userTurn}
-          round={this.getRound()}
+          round={this.getCurrentRound()}
           gameStarted={gameStarted}
+          recordMove={this.recordMove}
         />
       </React.Fragment>
     );
