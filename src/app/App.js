@@ -16,7 +16,7 @@ const Circle = function (props) {
 const DisplayCircle = function (props) {
   return (
     <div id="middle-circle">
-      <p id="counter">{props.gameRound}</p>
+      <p id="counter">{props.gameStarted ? props.round : ""}</p>
     </div>
   );
 };
@@ -27,7 +27,7 @@ const CirclesContainer = function (props) {
     if (props.activeColor === circleColor) {
       className += " active-circle";
     }
-    if (!props.readyForUserInput) {
+    if (!props.userTurn) {
       className += " pointer-events-disabled";
     }
     return className;
@@ -42,31 +42,31 @@ const CirclesContainer = function (props) {
         className={getCircleClass("red")}
         //pass the respective color as argument to onClick; used arrow syntax to prevent auto-running
         onClick={() => {
-          props.handleUserInput("red");
+          props.makeMove("red");
         }}
       />
       <Circle
         id="green-circle"
         className={getCircleClass("green")}
         onClick={() => {
-          props.handleUserInput("green");
+          props.makeMove("green");
         }}
       />
       <Circle
         id="yellow-circle"
         className={getCircleClass("yellow")}
         onClick={() => {
-          props.handleUserInput("yellow");
+          props.makeMove("yellow");
         }}
       />
       <Circle
         id="blue-circle"
         className={getCircleClass("blue")}
         onClick={() => {
-          props.handleUserInput("blue");
+          props.makeMove("blue");
         }}
       />
-      <DisplayCircle gameRound={props.gameRound} />;
+      <DisplayCircle gameStarted={props.gameStarted} round={props.round} />;
     </div>
   );
 };
@@ -87,7 +87,7 @@ const ButtonsContainer = function (props) {
     } else {
       className += "strict-disabled";
     }
-    if (props.gameInProgress) {
+    if (props.gameStarted) {
       className += " pointer-events-disabled";
     }
     return className;
@@ -96,10 +96,8 @@ const ButtonsContainer = function (props) {
   return (
     <div id="buttons-wrapper">
       <Button
-        text={props.gameInProgress ? "reset" : "start"}
-        onClick={
-          props.gameInProgress ? props.resetGame : props.handleNewSequence
-        }
+        text={props.gameStarted ? "reset" : "start"}
+        onClick={props.gameStarted ? props.resetGame : props.addColor}
       />
       <Button
         text={"strict"}
@@ -120,17 +118,17 @@ class App extends React.Component {
     super(props);
     this.state = {
       colors: ["red", "green", "yellow", "blue"],
-      cpuMoves: [],
+      cpuMoves: ["red", "green", "blue"], //[]
       userMoves: [],
       //Used to animate the button on/off
       activeColor: "",
-      gameRound: 0,
+      round: 3, //1
       //Conditional for display counter, start/reset button, and strict button
-      gameInProgress: false,
+      gameStarted: true, //false
       //Used to repeat previous sequence without new color when user is wrong
-      userIsWrong: false,
+      wrongAnswer: false,
       //Used to disable clicking color buttons until user's turn
-      readyForUserInput: false,
+      userTurn: true, //false
       //Strict is off by default
       strictMode: false,
       //Indicates restarting in strict mode after incorrect input
@@ -149,42 +147,102 @@ class App extends React.Component {
         ),
       },
     };
-    this.handleNewSequence = this.handleNewSequence.bind(this);
-    this.handleUserInput = this.handleUserInput.bind(this);
-    this.verifyUserMoves = this.verifyUserMoves.bind(this);
+    this.addColor = this.addColor.bind(this);
+    this.makeMove = this.makeMove.bind(this);
+    this.verifyMoves = this.verifyMoves.bind(this);
     this.repeatSequence = this.repeatSequence.bind(this);
     this.resetGame = this.resetGame.bind(this);
     this.toggleStrictMode = this.toggleStrictMode.bind(this);
 
     this.getRandomColor = this.getRandomColor.bind(this);
+    this.incrementRound = this.incrementRound.bind(this);
+    this.animateColor = this.animateColor.bind(this);
+    this.clearColor = this.clearColor.bind(this);
+    this.toggleTurn = this.toggleTurn.bind(this);
+    this.playColor = this.playColor.bind(this);
+    this.clearUserMoves = this.clearUserMoves.bind(this);
+
+    this.pushColor = this.pushColor.bind(this);
+    this.repeatCpuMoves = this.repeatCpuMoves.bind(this);
   }
 
-  //Runs when user clicks start and when CPU adds a new color to a sequence
-  handleNewSequence() {
-    //Used 4 cause picking from 4 colors
-    let randomColor = this.getRandomColor();
-    //When game starts, gameRound will be set to 1, otherwise, it remains the same value
-    const currentRound = this.state.gameInProgress
-      ? this.state.gameRound
-      : this.state.gameRound + 1;
+  //Runs when user clicks start, and when CPU adds a new color to a sequence
+  addColor() {
+    let newColor = this.getRandomColor();
     this.setState({
-      //Record the color CPU chose
-      cpuMoves: [...this.state.cpuMoves, randomColor],
-      //Animate the color 'on'
-      activeColor: randomColor,
-      gameRound: currentRound,
+      //Record the new color
+      cpuMoves: [...this.state.cpuMoves, newColor],
       //Changes start to reset and disables strict button once game begins
-      gameInProgress: true,
-      strictRestart: false,
+      gameStarted: true,
+      strictRestart: false, //???
     });
-    this.state.sounds[randomColor].play();
-    //Turn the animation off after a delay using timeout, also allow user to input once sequence is finished
-    resetColor = setTimeout(() => {
-      this.setState({
-        activeColor: "",
-        readyForUserInput: true,
-      });
-    }, 500);
+
+    new Promise((resolve, reject) => {
+      this.animateColor(newColor);
+      this.playSound(newColor);
+      resolve();
+    }).then(() => {
+      setTimeout(() => {
+        this.clearColor();
+        this.toggleTurn();
+      }, 500);
+    });
+  }
+
+  pushColor() {
+    let newColor = this.getRandomColor();
+    this.setState({
+      //Record the new color
+      cpuMoves: [...this.state.cpuMoves, newColor],
+    });
+  }
+
+  playColor(color) {
+    console.log(color);
+
+    new Promise((resolve, reject) => {
+      this.animateColor(color);
+      this.playSound(color);
+      resolve();
+    }).then(() => {
+      setTimeout(() => {
+        this.clearColor();
+      }, 300);
+    });
+  }
+
+  toggleTurn() {
+    this.setState({
+      userTurn: !this.state.userTurn,
+    });
+  }
+
+  animateColor(color) {
+    this.setState({
+      activeColor: color,
+    });
+  }
+  //maybe combine animateColor and clearColor using promise?
+  clearColor() {
+    this.setState({
+      activeColor: "",
+    });
+  }
+
+  playSound(color) {
+    this.state.sounds[color].play();
+  }
+
+  clearUserMoves() {
+    this.setState({
+      userMoves: [],
+    });
+  }
+
+  incrementRound() {
+    this.setState({
+      round: this.state.round + 1,
+    });
   }
 
   getRandomColor() {
@@ -192,107 +250,142 @@ class App extends React.Component {
     return randomColor;
   }
 
-  //Runs when user clicks a color; color argument is passed from SimonCircle's onClick prop
-  handleUserInput(color) {
-    //User can only click when it's their turn (sequence is not running)
-    if (this.state.readyForUserInput) {
-      //Prevent overlapping sounds if user clicks quickly
-      this.state.sounds[color].pause();
-      this.state.sounds[color].currentTime = 0;
-      //Record the user's move and animate the clicked button
-      let inputtedColor = color;
-      this.setState({
-        userMoves: [...this.state.userMoves, inputtedColor],
-        activeColor: color,
-      });
-      this.state.sounds[color].play();
-      //Reset the color style ('turn off')
-      //Needs to be same time as checkIfUserTurn so user can't input too early
-      let resetColor = setTimeout(() => {
-        this.setState({
-          activeColor: "",
-          readyForUserInput: true,
-        });
-      }, 100);
-      //Runs after each user click to check if user's turn is over (when length of userMoves = length of cpuMoves)
-      let checkIfUserTurnIsOver = setTimeout(() => {
-        //check if current move is oorrect or not
-        let index = this.state.userMoves.length - 1;
-        if (
-          this.state.userMoves[index] !== this.state.cpuMoves[index] &&
-          !this.state.strictMode
-        ) {
-          this.setState({
-            readyForUserInput: false,
-          });
-          this.verifyUserMoves();
-        }
-        //Used !strictRestart to prevent from running when the user is wrong in strict mode (since game must restart from 0)
-        if (
-          this.state.userMoves.length === this.state.cpuMoves.length &&
-          !this.state.strictRestart
-        ) {
-          this.verifyUserMoves();
-          //disable buttons when user finishes turn
-          this.setState({
-            readyForUserInput: false,
-          });
-        }
-      }, 100);
-
-      //Checks if user's move is correct after each click when strict mode is on (non-strict only checks at end of turn)
-      if (this.state.strictMode) {
-        //This timeout needs to run faster than checkIfUserTurnIsOver to give it priority
-        let strictTimeout = setTimeout(() => {
-          let index = this.state.userMoves.length - 1;
-          //If the user's current move is incorrect
-          if (this.state.userMoves[index] !== this.state.cpuMoves[index]) {
-            //Disable buttons and indicate game is restarting
-            this.setState({
-              readyForUserInput: false,
-              strictRestart: true,
-            });
-            //Clear to prevent it from allowing user input; resetGame() resets color anyway
-            clearTimeout(resetColor);
-            //Reset game to 0 and default values
-            this.resetGame();
-            //Start a new game
-            //Needed to use timeout to have delay between restarting and starting new game
-            let timeoutNewSequence = setTimeout(() => {
-              this.handleNewSequence();
-            }, 500);
-          }
-        }, 75);
+  repeatCpuMoves() {
+    let i = 0;
+    const repeatSequence = setInterval(() => {
+      console.log(i);
+      if (i === this.state.cpuMoves.length) {
+        console.log("done");
+        clearInterval(repeatSequence);
+        this.toggleTurn();
+      } else {
+        let currentColor = this.state.cpuMoves[i];
+        this.playColor(currentColor);
       }
+      i++;
+    }, 500);
+  }
+
+  checkIfUserTurnIsOver() {
+    if (this.state.userMoves.length === this.state.cpuMoves.length) {
+      return true;
+    }
+    return false;
+  }
+
+  //Runs when user clicks a color; color argument is on click
+  makeMove(color) {
+    //Prevent overlapping sounds if user clicks quickly
+    this.state.sounds[color].pause();
+    this.state.sounds[color].currentTime = 0;
+
+    //Record the user's move and animate the clicked button
+    this.setState({
+      userMoves: [...this.state.userMoves, color],
+    });
+
+    this.playColor(color);
+
+    //Runs after each user click to check if user's turn is over (when length of userMoves = length of cpuMoves)
+    //Why is this a timeout??? Because have to wait for the new color to be added in order to check --> change to Promise later
+    let checkIfUserTurnIsOver = setTimeout(() => {
+      //check if current move is correct or not to determien whether to stop user (ie. stop input on first error when not strict mode)
+      let currentIndex = this.state.userMoves.length - 1;
+      console.log(currentIndex);
+      let currentMove = this.state.userMoves[currentIndex];
+      let correctMove = this.state.cpuMoves[currentIndex];
+      if (
+        currentMove !== correctMove
+        // && !this.state.strictMode
+      ) {
+        console.log("Wrong Move");
+        this.toggleTurn();
+        this.clearUserMoves();
+        this.repeatCpuMoves();
+        return; //return so on last turn it doesnt go to next conditional since wrong answer
+      }
+
+      if (this.state.userMoves.length === this.state.cpuMoves.length) {
+        console.log("Last move");
+
+        new Promise((resolve, reject) => {
+          this.clearUserMoves();
+          this.incrementRound();
+          this.pushColor();
+          resolve();
+        })
+          .then(() => this.repeatCpuMoves())
+          .then(() => {
+            console.log("ready");
+            this.toggleTurn();
+          });
+      }
+
+      //Used !strictRestart to prevent from running when the user is wrong in strict mode (since game must restart from 0)
+      // if (
+      //   this.state.userMoves.length === this.state.cpuMoves.length
+      //   // && !this.state.strictRestart
+      // ) {
+      //   this.verifyMoves();
+      //   //disable buttons when user finishes turn
+      //   this.setState({
+      //     userTurn: false,
+      //   });
+      // }
+    }, 100);
+
+    //Checks if user's move is correct after each click when strict mode is on (non-strict only checks at end of turn)
+    if (this.state.strictMode) {
+      //This timeout needs to run faster than checkIfUserTurnIsOver to give it priority
+      let strictTimeout = setTimeout(() => {
+        let index = this.state.userMoves.length - 1;
+        //If the user's current move is incorrect
+        if (this.state.userMoves[index] !== this.state.cpuMoves[index]) {
+          //Disable buttons and indicate game is restarting
+          this.setState({
+            userTurn: false,
+            strictRestart: true,
+          });
+          //Clear to prevent it from allowing user input; resetGame() resets color anyway
+          clearTimeout(resetColor);
+          //Reset game to 0 and default values
+          this.resetGame();
+          //Start a new game
+          //Needed to use timeout to have delay between restarting and starting new game
+          let timeoutNewSequence = setTimeout(() => {
+            this.addColor();
+          }, 500);
+        }
+      }, 75);
     }
   }
 
   //Runs when user's turn is over
-  verifyUserMoves() {
+  verifyMoves() {
     //Checks for exact match between userMoves and cpuMoves, used join bc values are in arrays
     if (this.state.userMoves.join() === this.state.cpuMoves.join()) {
       this.repeatSequence();
-      //Update the gameRound counter to show advancing to next round
+      //Update the round counter to show advancing to next round
       this.setState({
-        gameRound: this.state.gameRound + 1,
-        //Ensure userIsWrong is set to false so repeatSequence() will run createNewSequence(runs handleNewSequence to add a new color)
-        userIsWrong: false,
+        round: this.state.round + 1,
+        //Ensure wrongAnswer is set to false so repeatSequence() will run createNewSequence(runs addColor to add a new color)
+        wrongAnswer: false,
       });
     }
-    //If user is incorrect while not strict mode bc in strict mode, an incorrect answer does not run verifyUserMoves
+    //If user is incorrect while not strict mode bc in strict mode, an incorrect answer does not run verifyMoves
     else if (this.state.strictMode === false) {
       //Empty userMoves so user can re-input
       this.setState({
         userMoves: [],
         //This ensures repeatSequence() won't run createNewSequence bc should not add a new color if user is wrong
-        userIsWrong: true,
+        wrongAnswer: true,
       });
       //Replay the previous sequence so user can re-try
       this.repeatSequence();
     }
   }
 
-  //If verifyUserMoves determined user was right, this repeats the sequence with a new color
+  //If verifyMoves determined user was right, this repeats the sequence with a new color
   //If user was wrong, this repeats the sequence as is then allows user to try again
   repeatSequence() {
     // Empty userMoves for new turn
@@ -325,16 +418,16 @@ class App extends React.Component {
       else {
         //Stop the interval from running again
         clearInterval(intervalRepeatSequence);
-        //If user was correct, run handleNewSequence (add a new color to the sequence)
-        if (this.state.userIsWrong === false) {
+        //If user was correct, run addColor (add a new color to the sequence)
+        if (this.state.wrongAnswer === false) {
           let createNewSequence = setTimeout(() => {
-            this.handleNewSequence();
+            this.addColor();
           }, 500);
         }
         //If the user was wrong, enable the buttons so user can try again (only occurs if not in strict mode)
-        if (this.state.userIsWrong) {
+        if (this.state.wrongAnswer) {
           this.setState({
-            readyForUserInput: true,
+            userTurn: true,
           });
         }
       }
@@ -351,18 +444,18 @@ class App extends React.Component {
       cpuMoves: [],
       userMoves: [],
       activeColor: "",
-      gameRound: 0,
-      gameInProgress: false,
-      userIsWrong: false,
-      readyForUserInput: false,
+      round: 0,
+      gameStarted: false,
+      wrongAnswer: false,
+      userTurn: false,
     });
   }
 
   //Runs when strict buttons is clicked while game isn't running
   toggleStrictMode() {
-    const { gameInProgress, strictMode } = this.state;
+    const { gameStarted, strictMode } = this.state;
     //User can only toggle if game has not begun
-    if (gameInProgress === false) {
+    if (gameStarted === false) {
       if (strictMode === false) {
         this.setState({
           strictMode: true,
@@ -376,40 +469,36 @@ class App extends React.Component {
     }
   }
 
-  displayGameRound() {
+  getRound() {
     if (this.state.strictRestart) {
       return "oops";
     }
-    if (this.state.gameRound <= 0) {
+    if (this.state.round <= 0) {
       return "";
     }
-    if (this.state.gameRound < 10) {
-      return "0" + this.state.gameRound;
-    } else return this.state.gameRound;
+    if (this.state.round < 10) {
+      return "0" + this.state.round;
+    } else return this.state.round;
   }
 
   render() {
-    const {
-      gameInProgress,
-      activeColor,
-      readyForUserInput,
-      strictMode,
-    } = this.state;
+    const { gameStarted, activeColor, userTurn, strictMode } = this.state;
     return (
       <React.Fragment>
         <h1>Circles Memory Game</h1>
         <ButtonsContainer
           toggleStrict={this.toggleStrictMode}
-          gameInProgress={gameInProgress}
+          gameStarted={gameStarted}
           strictMode={strictMode}
           resetGame={this.resetGame}
-          handleNewSequence={this.handleNewSequence}
+          addColor={this.addColor}
         />
         <CirclesContainer
-          handleUserInput={this.handleUserInput}
+          makeMove={this.makeMove}
           activeColor={activeColor}
-          readyForUserInput={readyForUserInput}
-          gameRound={this.displayGameRound()}
+          userTurn={userTurn}
+          round={this.getRound()}
+          gameStarted={gameStarted}
         />
       </React.Fragment>
     );
