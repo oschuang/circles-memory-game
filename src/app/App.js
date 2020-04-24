@@ -99,13 +99,13 @@ class App extends React.Component {
       cpuMoves: [...this.state.cpuMoves, newColor],
     });
   }
-  //Rename bc it also toggles at end?
+
   playSequence() {
     let i = 0;
     const replay = setInterval(() => {
       if (i === this.state.cpuMoves.length) {
         clearInterval(replay);
-        this.toggleTurn(); //Allow user input here bc sequence finished playing
+        this.toggleTurn(); //Toggle user turn here bc sequence finished playing
         return;
       }
       let currentColor = this.state.cpuMoves[i];
@@ -132,7 +132,6 @@ class App extends React.Component {
   }
 
   toggleTurn() {
-    //Runs when: Sequenced finished playing/user finishes inputting
     this.setState({
       userTurn: !this.state.userTurn,
     });

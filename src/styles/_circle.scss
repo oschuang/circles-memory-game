@@ -25,9 +25,9 @@
   border-radius: 50%;
 
   cursor: pointer;
-  &:hover {
-    @include dimFilter;
-  }
+  // &:hover {
+  //   @include dimFilter;
+  // }
 }
 #red-circle {
   grid-column: 2 / 3;
