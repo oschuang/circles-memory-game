@@ -1,11 +1,11 @@
 self.__precacheManifest = (self.__precacheManifest || []).concat([
   {
-    "revision": "f0ab3f6a72245541fc1a9d6c76db8c08",
+    "revision": "22bd49efb9f74f02d0f22ce203e86824",
     "url": "/circles-memory-game/index.html"
   },
   {
-    "revision": "b25a4df05440d5256317",
-    "url": "/circles-memory-game/static/css/main.71b9820d.chunk.css"
+    "revision": "9cc6e8f959a98666b773",
+    "url": "/circles-memory-game/static/css/main.0544224c.chunk.css"
   },
   {
     "revision": "ba0687b0fa9bf94626a9",
@@ -16,8 +16,8 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
     "url": "/circles-memory-game/static/js/2.a4b3c4ad.chunk.js.LICENSE.txt"
   },
   {
-    "revision": "b25a4df05440d5256317",
-    "url": "/circles-memory-game/static/js/main.3f198a4d.chunk.js"
+    "revision": "9cc6e8f959a98666b773",
+    "url": "/circles-memory-game/static/js/main.6a834e12.chunk.js"
   },
   {
     "revision": "4bb38830fe797f1b4a35",

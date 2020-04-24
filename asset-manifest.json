@@ -1,22 +1,22 @@
 {
   "files": {
-    "main.css": "/circles-memory-game/static/css/main.71b9820d.chunk.css",
-    "main.js": "/circles-memory-game/static/js/main.3f198a4d.chunk.js",
-    "main.js.map": "/circles-memory-game/static/js/main.3f198a4d.chunk.js.map",
+    "main.css": "/circles-memory-game/static/css/main.0544224c.chunk.css",
+    "main.js": "/circles-memory-game/static/js/main.6a834e12.chunk.js",
+    "main.js.map": "/circles-memory-game/static/js/main.6a834e12.chunk.js.map",
     "runtime-main.js": "/circles-memory-game/static/js/runtime-main.6ee444a8.js",
     "runtime-main.js.map": "/circles-memory-game/static/js/runtime-main.6ee444a8.js.map",
     "static/js/2.a4b3c4ad.chunk.js": "/circles-memory-game/static/js/2.a4b3c4ad.chunk.js",
     "static/js/2.a4b3c4ad.chunk.js.map": "/circles-memory-game/static/js/2.a4b3c4ad.chunk.js.map",
     "index.html": "/circles-memory-game/index.html",
-    "precache-manifest.c699d628051c4de1feb069007aa688c5.js": "/circles-memory-game/precache-manifest.c699d628051c4de1feb069007aa688c5.js",
+    "precache-manifest.d27d9a99fc481797d55d29835e672767.js": "/circles-memory-game/precache-manifest.d27d9a99fc481797d55d29835e672767.js",
     "service-worker.js": "/circles-memory-game/service-worker.js",
-    "static/css/main.71b9820d.chunk.css.map": "/circles-memory-game/static/css/main.71b9820d.chunk.css.map",
+    "static/css/main.0544224c.chunk.css.map": "/circles-memory-game/static/css/main.0544224c.chunk.css.map",
     "static/js/2.a4b3c4ad.chunk.js.LICENSE.txt": "/circles-memory-game/static/js/2.a4b3c4ad.chunk.js.LICENSE.txt"
   },
   "entrypoints": [
     "static/js/runtime-main.6ee444a8.js",
     "static/js/2.a4b3c4ad.chunk.js",
-    "static/css/main.71b9820d.chunk.css",
-    "static/js/main.3f198a4d.chunk.js"
+    "static/css/main.0544224c.chunk.css",
+    "static/js/main.6a834e12.chunk.js"
   ]
 }
