@@ -1,0 +1,6 @@
+$main-background-color: #e6e6e6;
+$main-font: "Nunito";
+
+@mixin dimFilter {
+  filter: brightness(50%);
+}

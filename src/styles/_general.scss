@@ -1,0 +1,20 @@
+@import "variables";
+
+body {
+  background-color: $main-background-color;
+}
+
+#app {
+  background-color: $main-background-color;
+  width: 100%;
+}
+
+h1 {
+  text-align: center;
+  font-family: $main-font;
+  margin-top: 1.8rem;
+}
+
+.disabled {
+  pointer-events: none;
+}

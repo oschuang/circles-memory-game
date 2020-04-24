@@ -1,0 +1,36 @@
+@import "variables";
+
+#buttons-wrapper {
+  margin: 0 auto;
+  margin-top: 3rem;
+  text-align: center;
+}
+
+/*start and strict buttons*/
+button {
+  margin-left: 0.5rem;
+  margin-right: 0.5rem;
+  padding: 5px 10px;
+
+  font-family: $main-font;
+  font-size: 1.3rem;
+  background-color: rgb(131, 131, 131);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  &:hover {
+    @include dimFilter;
+  }
+}
+
+/*strict is on*/
+.strict-on {
+  background-color: rgb(204, 15, 15);
+  color: white;
+}
+
+.strict-disabled {
+  pointer-events: none;
+  filter: brightness(70%);
+}

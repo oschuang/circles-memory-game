@@ -1,109 +1,9 @@
 import React from "react";
+
+import CirclesContainer from "../components/CirclesContainer";
+import ButtonsContainer from "../components/ButtonsContainer";
+
 import "../scss/css/main.min.css";
-
-//Color buttons that animate and are clicked on by user
-const Circle = function (props) {
-  return (
-    <div
-      id={props.id}
-      className={props.className}
-      onClick={props.onClick}
-    ></div>
-  );
-};
-
-//Displays the game round
-const DisplayCircle = function (props) {
-  return (
-    <div id="middle-circle">
-      <p id="round-display">{props.gameStarted ? props.round : ""}</p>
-    </div>
-  );
-};
-
-const CirclesContainer = function (props) {
-  function getCircleClass(circleColor) {
-    let className = "color-circle";
-    if (props.activeColor === circleColor) {
-      className += " active-circle";
-    }
-    if (!props.userTurn) {
-      className += " disabled";
-    }
-    return className;
-  }
-
-  function onCircleClick(color) {
-    new Promise((resolve, reject) => {
-      props.recordMove(color);
-      resolve();
-    }).then(() => props.verifyMove(color));
-  }
-
-  return (
-    <div id="circles-wrapper">
-      <Circle
-        id="red-circle"
-        //animate the button with active-circle class and disable its pointer-events until the user's turn
-        //color-circle is default class
-        className={getCircleClass("red")}
-        onClick={() => onCircleClick("red")}
-      />
-      <Circle
-        id="green-circle"
-        className={getCircleClass("green")}
-        onClick={() => onCircleClick("green")}
-      />
-      <Circle
-        id="yellow-circle"
-        className={getCircleClass("yellow")}
-        onClick={() => onCircleClick("yellow")}
-      />
-      <Circle
-        id="blue-circle"
-        className={getCircleClass("blue")}
-        onClick={() => onCircleClick("blue")}
-      />
-      <DisplayCircle gameStarted={props.gameStarted} round={props.round} />
-    </div>
-  );
-};
-
-const Button = function (props) {
-  return (
-    <button onClick={props.onClick} className={props.className}>
-      {props.text}
-    </button>
-  );
-};
-
-const ButtonsContainer = function (props) {
-  function getStrictButtonClass() {
-    let className = "";
-    if (props.strictMode) {
-      className += "strict-on";
-    }
-    if (props.gameStarted) {
-      className += " strict-disabled";
-    }
-    return className;
-  }
-
-  return (
-    <div id="buttons-wrapper">
-      <Button
-        text={props.gameStarted ? "RESET" : "START"}
-        onClick={props.gameStarted ? props.resetGame : props.startGame}
-        className={props.gameStarted && !props.userTurn ? "disabled" : ""}
-      />
-      <Button
-        text={"STRICT"}
-        onClick={props.toggleStrict}
-        className={getStrictButtonClass()}
-      />
-    </div>
-  );
-};
 
 class App extends React.Component {
   constructor(props) {
@@ -112,13 +12,10 @@ class App extends React.Component {
       colors: ["red", "green", "yellow", "blue"],
       cpuMoves: [],
       userMoves: [],
-      //Used to animate the button on/off
       activeColor: "",
       round: 1,
-      //Conditional for display counter, start/reset button, and strict button
-      gameStarted: false,
-      //Used to disable clicking color buttons until user's turn
       userTurn: false,
+      gameStarted: false,
       strictMode: false,
       sounds: {
         red: new Audio("https://s3.amazonaws.com/freecodecamp/simonSound1.mp3"),
@@ -140,11 +37,12 @@ class App extends React.Component {
 
     this.addColor = this.addColor.bind(this);
     this.playSequence = this.playSequence.bind(this);
+
     this.advanceRound = this.advanceRound.bind(this);
     this.redoRound = this.redoRound.bind(this);
+
     this.toggleTurn = this.toggleTurn.bind(this);
     this.clearUserMoves = this.clearUserMoves.bind(this);
-
     this.resetGame = this.resetGame.bind(this);
     this.toggleStrict = this.toggleStrict.bind(this);
 
@@ -175,11 +73,12 @@ class App extends React.Component {
     this.playColorFX(color);
   }
 
-  //Runs when user clicks a color; color argument is on click
   verifyMove(color) {
-    //Wrong: stop input and repeat sequence
+    /* Wrong move:
+      A) Strict mode: Restart game from beginning
+      B) Normal mode: Disable user input and repeat the round
+    */
     if (!this.isCorrect()) {
-      console.log("Wrong Move");
       if (this.state.strictMode) {
         //TO-DO: add 'game over' display (use round)
         this.resetGame();
@@ -189,9 +88,7 @@ class App extends React.Component {
       this.redoRound();
       return;
     }
-    //Correct: check if final move
     if (this.isFinalMove()) {
-      console.log("Last move");
       this.advanceRound();
     }
   }
@@ -199,19 +96,16 @@ class App extends React.Component {
   addColor() {
     const newColor = this.getRandomColor();
     this.setState({
-      //Record the new color
       cpuMoves: [...this.state.cpuMoves, newColor],
     });
   }
-  //rename bc it also toggles at end?
+  //Rename bc it also toggles at end?
   playSequence() {
     let i = 0;
     const replay = setInterval(() => {
       if (i === this.state.cpuMoves.length) {
-        // console.log("done");
         clearInterval(replay);
-        //toggling here bc end of sequence
-        this.toggleTurn();
+        this.toggleTurn(); //Allow user input here bc sequence finished playing
         return;
       }
       let currentColor = this.state.cpuMoves[i];
@@ -238,7 +132,7 @@ class App extends React.Component {
   }
 
   toggleTurn() {
-    //Runs when: cpu finishes replaying/user finishes inputting
+    //Runs when: Sequenced finished playing/user finishes inputting
     this.setState({
       userTurn: !this.state.userTurn,
     });
@@ -257,7 +151,6 @@ class App extends React.Component {
   }
 
   resetGame() {
-    //Restore state values to default
     this.setState({
       cpuMoves: [],
       userMoves: [],
@@ -304,12 +197,14 @@ class App extends React.Component {
   }
 
   isCorrect() {
-    const currentMoveIndex = this.state.userMoves.length - 1;
-    const userMove = this.state.userMoves[currentMoveIndex];
-    const cpuMove = this.state.cpuMoves[currentMoveIndex];
+    const { userMoves, cpuMoves } = this.state;
+    const currentMoveIndex = userMoves.length - 1;
+    const userMove = userMoves[currentMoveIndex];
+    const cpuMove = cpuMoves[currentMoveIndex];
     if (userMove === cpuMove) {
       return true;
     }
+
     return false;
   }
   isFinalMove() {
