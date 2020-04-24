@@ -16,7 +16,7 @@ const Circle = function (props) {
 const DisplayCircle = function (props) {
   return (
     <div id="middle-circle">
-      <p id="counter">{props.gameStarted ? props.round : ""}</p>
+      <p id="round-display">{props.gameStarted ? props.round : ""}</p>
     </div>
   );
 };
@@ -28,7 +28,7 @@ const CirclesContainer = function (props) {
       className += " active-circle";
     }
     if (!props.userTurn) {
-      className += " pointer-events-disabled";
+      className += " disabled";
     }
     return className;
   }
@@ -64,7 +64,7 @@ const CirclesContainer = function (props) {
         className={getCircleClass("blue")}
         onClick={() => onCircleClick("blue")}
       />
-      <DisplayCircle gameStarted={props.gameStarted} round={props.round} />;
+      <DisplayCircle gameStarted={props.gameStarted} round={props.round} />
     </div>
   );
 };
@@ -81,12 +81,10 @@ const ButtonsContainer = function (props) {
   function getStrictButtonClass() {
     let className = "";
     if (props.strictMode) {
-      className += "strict-enabled";
-    } else {
-      className += "strict-disabled";
+      className += "strict-on";
     }
     if (props.gameStarted) {
-      className += " pointer-events-disabled";
+      className += " strict-disabled";
     }
     return className;
   }
@@ -94,11 +92,12 @@ const ButtonsContainer = function (props) {
   return (
     <div id="buttons-wrapper">
       <Button
-        text={props.gameStarted ? "reset" : "start"}
+        text={props.gameStarted ? "RESET" : "START"}
         onClick={props.gameStarted ? props.resetGame : props.startGame}
+        className={props.gameStarted && !props.userTurn ? "disabled" : ""}
       />
       <Button
-        text={"strict"}
+        text={"STRICT"}
         onClick={props.toggleStrict}
         className={getStrictButtonClass()}
       />
@@ -111,20 +110,16 @@ class App extends React.Component {
     super(props);
     this.state = {
       colors: ["red", "green", "yellow", "blue"],
-      cpuMoves: [], //[]
+      cpuMoves: [],
       userMoves: [],
       //Used to animate the button on/off
       activeColor: "",
-      round: 1, //1
+      round: 1,
       //Conditional for display counter, start/reset button, and strict button
-      gameStarted: false, //false
-      //Used to repeat previous sequence without new color when user is wrong
-      wrongAnswer: false,
+      gameStarted: false,
       //Used to disable clicking color buttons until user's turn
-      userTurn: false, //false
-      //Strict is off by default
+      userTurn: false,
       strictMode: false,
-      //Stores the sound fx clips
       sounds: {
         red: new Audio("https://s3.amazonaws.com/freecodecamp/simonSound1.mp3"),
         green: new Audio(
@@ -186,6 +181,7 @@ class App extends React.Component {
     if (!this.isCorrect()) {
       console.log("Wrong Move");
       if (this.state.strictMode) {
+        //TO-DO: add 'game over' display (use round)
         this.resetGame();
         return;
       }
@@ -346,6 +342,7 @@ class App extends React.Component {
           strictMode={strictMode}
           resetGame={this.resetGame}
           startGame={this.startGame}
+          userTurn={userTurn}
         />
         <CirclesContainer
           verifyMove={this.verifyMove}

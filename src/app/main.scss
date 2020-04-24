@@ -1,98 +1,102 @@
 @import url("https://fonts.googleapis.com/css?family=Nunito");
-html {
-  background-color: #e6e6e6;
+
+$main-background-color: #e6e6e6;
+$main-font: "Nunito";
+
+@mixin dimFilter {
+  filter: brightness(50%);
+}
+
+body {
+  background-color: $main-background-color;
 }
 
 #app {
-  background-color: #e6e6e6;
+  background-color: $main-background-color;
   width: 100%;
-  min-width: 293px;
 }
 
 h1 {
   text-align: center;
-  font-family: Nunito;
-  margin-top: 1.5rem;
+  font-family: $main-font;
+  margin-top: 1.8rem;
 }
 
 #circles-wrapper {
   width: 100%;
-  height: 18rem;
   margin: 0 auto;
-  margin-top: 3rem;
-  background-color: #e6e6e6;
+  margin-top: 5rem;
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   grid-template-rows: 1fr 1fr 1fr;
-  grid-gap: 0.5rem;
+  grid-gap: 2rem;
+  justify-content: center;
+  background-color: #e6e6e6;
 }
 
 .color-circle {
-  cursor: pointer;
-  border-radius: 50%;
+  width: 100%;
+  height: 100%;
   border-width: 4px;
   border-style: solid;
-  /* when user clicks a color */
+  border-radius: 50%;
+  align-self: center;
+  justify-self: center;
+  cursor: pointer;
+  &:hover {
+    @include dimFilter;
+  }
 }
-.color-circle:active {
-  filter: brightness(50%);
-}
-
 #red-circle {
   grid-column: 2 / 3;
   grid-row: 3 / 4;
   background-color: #f46256;
   border-color: #c1272d;
 }
-
 #green-circle {
   grid-column: 1 / 2;
   grid-row: 2 / 3;
   background-color: #93dd99;
   border-color: #00be00;
 }
-
 #blue-circle {
   grid-column: 2 / 3;
   grid-row: 1 / 2;
   background-color: #94caf2;
   border-color: #4466e2;
 }
-
 #yellow-circle {
   grid-column: 3 / 4;
   grid-row: 2 / 3;
   background-color: #fff96a;
   border-color: #bfaa34;
 }
-
-/*effect for button flashing animation*/
 .active-circle {
-  filter: brightness(50%);
+  @include dimFilter;
 }
 
 /*circle for displaying round*/
 #middle-circle {
-  /*adjust margin to change its size*/
-  margin: 1rem 1rem 1rem 1rem;
+  width: 60px;
+  height: 60px;
   grid-column: 2 / 3;
   grid-row: 2 / 3;
-  border-radius: 50%;
+  align-self: center;
+  justify-self: center;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  background-color: black;
+  color: black;
+  border: 2px solid black;
+  border-radius: 50%;
 }
 
 /*text for displaying round*/
-#counter {
-  font-family: Nunito;
-  font-size: 1rem;
+#round-display {
+  font-family: $main-font;
+  font-size: 1.5rem;
   font-weight: 500;
-  color: white;
-  position: relative;
-  top: 0.5rem;
 }
 
 #buttons-wrapper {
@@ -103,78 +107,62 @@ h1 {
 
 /*start and strict buttons*/
 button {
-  font-family: Nunito;
+  margin-left: 0.5rem;
+  margin-right: 0.5rem;
+  padding: 5px 10px;
+  font-family: $main-font;
   font-size: 1.3rem;
-  background-color: black;
+  background-color: rgb(131, 131, 131);
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
-}
-button:active {
-  filter: brightness(50%);
-}
-
-/*strict is off*/
-.strict-disabled {
-  color: white;
-}
-.strict-disabled:active {
-  color: red;
+  &:hover {
+    @include dimFilter;
+  }
 }
 
 /*strict is on*/
-.strict-enabled {
-  color: red;
-}
-.strict-enabled:active {
+.strict-on {
+  background-color: rgb(204, 15, 15);
   color: white;
 }
 
-/*disables pointer events for circles when not ready for user input, and disables strict if game started*/
-.pointer-events-disabled {
+.strict-disabled {
+  pointer-events: none;
+  filter: brightness(70%);
+}
+
+.disabled {
   pointer-events: none;
 }
 
 /*media queries  */
-@media only screen and (min-width: 370px) {
+@media only screen and (min-width: 300px) {
   #circles-wrapper {
-    width: 85%;
-    height: 18rem;
+    width: 280px;
+    height: 270px;
+  }
+}
+
+@media only screen and (min-width: 350px) {
+  #circles-wrapper {
+    width: 300px;
+    height: 290px;
   }
 }
 
 @media only screen and (min-width: 400px) {
   #circles-wrapper {
-    width: 86%;
-    height: 20rem;
-  }
-  #counter {
-    font-size: 1.2rem;
-  }
-}
-
-@media only screen and (min-width: 450px) {
-  #circles-wrapper {
-    width: 82%;
-    height: 21rem;
+    width: 330px;
+    height: 315px;
   }
 }
 
 @media only screen and (min-width: 500px) {
   #circles-wrapper {
-    width: 80%;
-    height: 23rem;
-  }
-  #counter {
-    font-size: 1.3rem;
-  }
-}
-
-@media only screen and (min-width: 550px) {
-  #circles-wrapper {
-    width: 76%;
-    height: 24rem;
+    width: 370px;
+    height: 350px;
   }
 }
 
@@ -185,8 +173,9 @@ button:active {
   }
 }
 
-@media only screen and (min-width: 900px) {
-  #counter {
-    font-size: 1.5rem;
+@media only screen and (min-width: 1200px) {
+  .color-circle {
+    width: 130px;
+    height: 130px;
   }
 }
