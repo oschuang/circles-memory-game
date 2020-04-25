@@ -14,7 +14,7 @@
 importScripts("https://storage.googleapis.com/workbox-cdn/releases/4.3.1/workbox-sw.js");
 
 importScripts(
-  "/circles-memory-game/precache-manifest.d27d9a99fc481797d55d29835e672767.js"
+  "/circles-memory-game/precache-manifest.1de74ca30f6c8f7483bddea184bca3cb.js"
 );
 
 self.addEventListener('message', (event) => {
