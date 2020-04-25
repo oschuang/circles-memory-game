@@ -47,6 +47,7 @@ class App extends React.Component {
     this.toggleStrict = this.toggleStrict.bind(this);
 
     this.incrementRound = this.incrementRound.bind(this);
+    this.displayMessage = this.displayMessage.bind(this);
     this.getRandomColor = this.getRandomColor.bind(this);
 
     this.playColorFX = this.playColorFX.bind(this);
@@ -76,20 +77,22 @@ class App extends React.Component {
   verifyMove(color) {
     /* Wrong move:
       A) Strict mode: Restart game from beginning
-      B) Normal mode: Disable user input and repeat the round
+      B) Default mode: Disable user input and repeat the round
     */
+    //Timeouts are used to make the game flow smoother by having delays before resetting/redoing/advancing
     if (!this.isCorrect()) {
+      this.toggleTurn();
       if (this.state.strictMode) {
-        //TO-DO: add 'game over' display (use round)
-        this.resetGame();
+        this.displayMessage("GAME OVER");
+        setTimeout(this.resetGame, 1000);
         return;
       }
-      this.toggleTurn();
-      this.redoRound();
+      this.displayMessage("oops");
+      setTimeout(this.redoRound, 500);
       return;
     }
     if (this.isFinalMove()) {
-      this.advanceRound();
+      setTimeout(this.advanceRound, 500);
     }
   }
 
@@ -102,10 +105,10 @@ class App extends React.Component {
 
   playSequence() {
     let i = 0;
-    const replay = setInterval(() => {
+    const playColors = setInterval(() => {
       if (i === this.state.cpuMoves.length) {
-        clearInterval(replay);
-        this.toggleTurn(); //Toggle user turn here bc sequence finished playing
+        clearInterval(playColors);
+        this.toggleTurn(); //Toggling user turn here bc sequence finished playing
         return;
       }
       let currentColor = this.state.cpuMoves[i];
@@ -127,6 +130,7 @@ class App extends React.Component {
   }
 
   redoRound() {
+    this.displayMessage(this.state.cpuMoves.length); //Resets display to round bc wrong answer displays "oops"
     this.clearUserMoves();
     this.playSequence();
   }
@@ -148,6 +152,11 @@ class App extends React.Component {
       round: this.state.round + 1,
     });
   }
+  displayMessage(message) {
+    this.setState({
+      round: message,
+    });
+  }
 
   resetGame() {
     this.setState({
@@ -167,7 +176,6 @@ class App extends React.Component {
   }
 
   playColorFX(color) {
-    console.log(color);
     this.animateColor(color);
     this.playSound(color);
   }
@@ -178,7 +186,7 @@ class App extends React.Component {
     }).then(() => {
       setTimeout(() => {
         this.deactivateColor();
-      }, 300);
+      }, 250);
     });
   }
   activateColor(color) {
@@ -192,7 +200,10 @@ class App extends React.Component {
     });
   }
   playSound(color) {
-    this.state.sounds[color].play();
+    const sounds = this.state.sounds;
+    sounds[color].pause(); //Stops sound in case of conseuctive same color
+    sounds[color].currentTime = 0; //Ensures sound plays from beginning
+    sounds[color].play();
   }
 
   isCorrect() {
